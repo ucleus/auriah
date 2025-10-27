@@ -1,6 +1,6 @@
 const path = require('path');
 const { store, generateId } = require('../data/inMemoryStore');
-const { getPool, hasPool } = require('../db/pool');
+const { getPool, hasPool, invalidatePool } = require('../db/pool');
 
 const TABLE_MAP = {
   tasks: 'tasks',
@@ -18,6 +18,45 @@ const FIELD_MAP = {
   photos: ['filename', 'url', 'caption'],
   learn: ['title', 'url', 'category'],
   places: ['name', 'address', 'lat', 'lng', 'notes'],
+};
+
+const CONNECTION_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'PROTOCOL_CONNECTION_LOST',
+  'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR',
+  'PROTOCOL_ENQUEUE_HANDSHAKE_TWICE',
+  'ER_ACCESS_DENIED_ERROR',
+  'ER_BAD_DB_ERROR',
+  'ER_CON_COUNT_ERROR',
+  'ER_NOT_SUPPORTED_AUTH_MODE',
+  'POOL_CLOSED',
+  'ENOTFOUND',
+  'EHOSTUNREACH',
+]);
+
+const isConnectionError = (error) => {
+  if (!error) return false;
+  if (error.code && CONNECTION_ERROR_CODES.has(error.code)) {
+    return true;
+  }
+  if (typeof error.fatal === 'boolean' && error.fatal) {
+    return true;
+  }
+  const message = typeof error.message === 'string' ? error.message : '';
+  return Array.from(CONNECTION_ERROR_CODES).some((code) => message.includes(code));
+};
+
+const handleConnectionFailure = async (error) => {
+  if (!isConnectionError(error)) {
+    return false;
+  }
+  const code = error.code || error.message;
+  console.warn(
+    `[resourceService] MySQL connection error (${code}). Falling back to in-memory store.`
+  );
+  await invalidatePool();
+  return true;
 };
 
 const normalizeResource = (resource) => {
@@ -40,8 +79,14 @@ const pickFields = (resource, payload) => {
 const listResource = async (resource) => {
   normalizeResource(resource);
   if (hasPool()) {
-    const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} ORDER BY id DESC`);
-    return rows;
+    try {
+      const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} ORDER BY id DESC`);
+      return rows;
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
   }
   return [...(store[resource] || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
 };
@@ -49,13 +94,19 @@ const listResource = async (resource) => {
 const createResource = async (resource, payload) => {
   normalizeResource(resource);
   if (hasPool()) {
-    const values = pickFields(resource, payload);
-    const [result] = await getPool().query(
-      `INSERT INTO ${TABLE_MAP[resource]} SET ?`,
-      values
-    );
-    const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} WHERE id = ?`, [result.insertId]);
-    return rows[0];
+    try {
+      const values = pickFields(resource, payload);
+      const [result] = await getPool().query(
+        `INSERT INTO ${TABLE_MAP[resource]} SET ?`,
+        values
+      );
+      const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} WHERE id = ?`, [result.insertId]);
+      return rows[0];
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
   }
   const newItem = { id: generateId(), ...pickFields(resource, payload) };
   store[resource] = [newItem, ...(store[resource] || [])];
@@ -65,10 +116,16 @@ const createResource = async (resource, payload) => {
 const updateResource = async (resource, id, payload) => {
   normalizeResource(resource);
   if (hasPool()) {
-    const values = pickFields(resource, payload);
-    await getPool().query(`UPDATE ${TABLE_MAP[resource]} SET ? WHERE id = ?`, [values, id]);
-    const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} WHERE id = ?`, [id]);
-    return rows[0];
+    try {
+      const values = pickFields(resource, payload);
+      await getPool().query(`UPDATE ${TABLE_MAP[resource]} SET ? WHERE id = ?`, [values, id]);
+      const [rows] = await getPool().query(`SELECT * FROM ${TABLE_MAP[resource]} WHERE id = ?`, [id]);
+      return rows[0];
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
   }
   store[resource] = (store[resource] || []).map((item) =>
     Number(item.id) === Number(id) ? { ...item, ...pickFields(resource, payload) } : item
@@ -79,8 +136,14 @@ const updateResource = async (resource, id, payload) => {
 const deleteResource = async (resource, id) => {
   normalizeResource(resource);
   if (hasPool()) {
-    await getPool().query(`DELETE FROM ${TABLE_MAP[resource]} WHERE id = ?`, [id]);
-    return true;
+    try {
+      await getPool().query(`DELETE FROM ${TABLE_MAP[resource]} WHERE id = ?`, [id]);
+      return true;
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
   }
   store[resource] = (store[resource] || []).filter((item) => Number(item.id) !== Number(id));
   return true;
@@ -93,18 +156,28 @@ const searchAll = async (query) => {
   const result = {};
   const resources = Object.keys(TABLE_MAP);
   if (hasPool()) {
-    const pool = getPool();
-    await Promise.all(
-      resources.map(async (resource) => {
-        const [rows] = await pool.query(`SELECT * FROM ${TABLE_MAP[resource]} ORDER BY id DESC LIMIT 25`);
-        result[resource === 'music' ? 'music' : resource] = rows.filter((item) =>
-          Object.values(item || {}).some((value) =>
-            typeof value === 'string' ? fuzzyMatch(value, query) : false
-          )
-        );
-      })
-    );
-  } else {
+    try {
+      const pool = getPool();
+      await Promise.all(
+        resources.map(async (resource) => {
+          const [rows] = await pool.query(
+            `SELECT * FROM ${TABLE_MAP[resource]} ORDER BY id DESC LIMIT 25`
+          );
+          result[resource === 'music' ? 'music' : resource] = rows.filter((item) =>
+            Object.values(item || {}).some((value) =>
+              typeof value === 'string' ? fuzzyMatch(value, query) : false
+            )
+          );
+        })
+      );
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
+  }
+
+  if (!Object.keys(result).length) {
     resources.forEach((resource) => {
       const key = resource;
       result[key] = (store[key] || []).filter((item) =>
@@ -142,8 +215,14 @@ const getSuggestions = async (query) => {
 
 const getInspiredPrompt = async () => {
   if (hasPool()) {
-    const [rows] = await getPool().query('SELECT text FROM inspired_prompts ORDER BY RAND() LIMIT 1');
-    if (rows.length) return rows[0].text;
+    try {
+      const [rows] = await getPool().query('SELECT text FROM inspired_prompts ORDER BY RAND() LIMIT 1');
+      if (rows.length) return rows[0].text;
+    } catch (error) {
+      if (!(await handleConnectionFailure(error))) {
+        throw error;
+      }
+    }
   }
   const prompts = store.inspired_prompts || [];
   return prompts[Math.floor(Math.random() * prompts.length)];
