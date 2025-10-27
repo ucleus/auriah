@@ -19,6 +19,7 @@ import { SkipNavContent, SkipNavLink } from '@chakra-ui/skip-nav';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiGrid, FiMic, FiMoon, FiSearch, FiSun } from 'react-icons/fi';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { FOOTER_LEFT, FOOTER_RIGHT, NAV_LINKS, QUICK_APPS } from '../constants/layout';
 
 const FALLBACK_PROMPTS = [
   'Discover mindful routines for a calmer day',
@@ -27,36 +28,6 @@ const FALLBACK_PROMPTS = [
   'Explore hidden art exhibits nearby',
   'Plan a productivity sprint for the week',
   'Find ambient music to focus with',
-];
-
-const QUICK_APPS = [
-  { label: 'Tasks', path: '/tasks' },
-  { label: 'Notes', path: '/notes' },
-  { label: 'Music', path: '/music' },
-  { label: 'Photos', path: '/photos' },
-  { label: 'Learn', path: '/learn' },
-  { label: 'Maps', path: '/maps' },
-];
-
-const NAV_LINKS = [
-  { label: 'About', href: '/about' },
-  { label: 'Auirah Apps', href: '/apps' },
-  { label: 'Privacy', href: '/privacy' },
-];
-
-const FOOTER_LEFT = [
-  { label: 'United States' },
-  { label: 'Advertising', href: '/advertising' },
-  { label: 'Business', href: '/business' },
-  { label: 'How Search works', href: '/how-search-works' },
-];
-
-const FOOTER_RIGHT = [
-  { label: 'English', href: '/lang/en' },
-  { label: 'Español', href: '/lang/es' },
-  { label: 'Tiếng Việt', href: '/lang/vi' },
-  { label: 'Français', href: '/lang/fr' },
-  { label: 'Settings', href: '/settings' },
 ];
 
 const SUGGESTION_LIST_ID = 'auirah-suggestion-list';
