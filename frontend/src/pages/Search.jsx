@@ -263,29 +263,30 @@ const Search = () => {
 
   const fetchResults = useCallback(
     async (term) => {
-        const trimmed = term.trim();
-        setResults({});
-        if (!trimmed) {
-          setStatus('Enter a search term to see results.');
-          setIsLoading(false);
-          return;
-        }
+      const trimmed = term.trim();
+      setResults({});
+      setError('');
 
-        setIsLoading(true);
-        setError('');
-        setStatus('Searching…');
-        try {
-          const data = await request(`/api/search?q=${encodeURIComponent(trimmed)}`);
-          const normalized = safeObject(data);
-          setResults(normalized);
-          setStatus(`Showing results for “${trimmed}”.`);
-        } catch (err) {
-          setError('We could not load search results right now. Please try again.');
-          setStatus('Search unavailable.');
-        } finally {
-          setIsLoading(false);
-        }
-      },
+      if (!trimmed) {
+        setStatus('Enter a search term to see results.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setStatus('Searching…');
+      try {
+        const data = await request(`/api/search?q=${encodeURIComponent(trimmed)}`);
+        const normalized = safeObject(data);
+        setResults(normalized);
+        setStatus(`Showing results for “${trimmed}”.`);
+      } catch (err) {
+        setError('We could not load search results right now. Please try again.');
+        setStatus('Search unavailable.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
     []
   );
 
