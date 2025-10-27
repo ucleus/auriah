@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auirah</title>
+  <meta name="description" content="Auirah – a playful, Google‑style search home page." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Product+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0f1115; /* dark by default (user prefers dark mode) */
+      --text: #e9eef7;
+      --muted: #a6b0c3;
+      --card: #151823;
+      --ring: #2c72ff22;
+      --accent: #6ae3ff;
+      --link: #8ab4f8;
+    }
+    [data-theme="light"]{
+      --bg: #ffffff;
+      --text: #1a1f2b;
+      --muted: #5b6476;
+      --card: #f6f7fb;
+      --ring: #2c72ff22;
+      --accent: #0b57d0;
+      --link: #1a73e8;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text); background:var(--bg); display:grid; grid-template-rows:auto 1fr auto;
+    }
+    header, footer{display:flex; align-items:center; justify-content:space-between; padding:12px 20px;}
+    header{gap:12px}
+    header nav a{color:var(--text); text-decoration:none; opacity:.85; margin:0 10px; font-size:14px}
+    header nav a:hover{opacity:1}
+    .apps{display:flex; gap:8px; align-items:center}
+    .chip{padding:6px 10px; background:var(--card); border-radius:999px; font-size:12px; color:var(--muted); border:1px solid #ffffff10}
+    .toggle{appearance:none; width:46px; height:26px; border-radius:999px; position:relative; background:#3b4152; outline:none; cursor:pointer; border:none}
+    .toggle:after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:all .2s ease}
+    .toggle:checked{background:#8ab4f8}
+    .toggle:checked:after{left:23px}
+
+    main{display:grid; place-items:center; padding:40px 20px}
+    .wrap{display:flex; flex-direction:column; align-items:center; gap:24px; width:100%; max-width:640px}
+
+    .logo{font-size:84px; line-height:1; font-weight:700; letter-spacing:-2px; user-select:none; font-family: "Product Sans", Inter, sans-serif;}
+    .logo span{display:inline-block}
+    .logo .a1{color:#ff4da6} /* pink */
+    .logo .u{color:#00e6e6}   /* aqua */
+    .logo .i{color:#6ec6ff}   /* light blue */
+    .logo .r{color:#ff2b75}   /* hot pink */
+    .logo .a2{color:#ffd43b}  /* yellow */
+    .logo .h{color:#b77dff}   /* purple */
+
+    .greeting{font-size:16px; color:var(--muted)}
+
+    .search{
+      width:100%; background:var(--card); border:1px solid #ffffff12; border-radius:999px; display:flex; align-items:center; padding:10px 14px; gap:10px; box-shadow:0 10px 30px var(--ring);
+    }
+    .search input{
+      flex:1; background:transparent; color:var(--text); border:none; outline:none; font-size:16px; padding:8px
+    }
+    .icon-btn{width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:#ffffff0f; border:1px solid #ffffff14; cursor:pointer}
+    .icon-btn:hover{background:#ffffff18}
+    .btns{display:flex; gap:12px}
+    .btn{
+      background:#ffffff0e; color:var(--text); border:1px solid #ffffff14; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:14px
+    }
+    .btn:hover{background:#ffffff1a}
+
+    .quick-apps{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+    .quick-apps a{padding:8px 12px; background:#ffffff0e; border:1px solid #ffffff14; border-radius:999px; color:var(--text); text-decoration:none; font-size:13px}
+    .quick-apps a:hover{background:#ffffff1a}
+
+    .suggestions{width:100%; background:var(--card); border:1px solid #ffffff16; border-top:none; border-radius:0 0 14px 14px; overflow:hidden; display:none}
+    .suggestions.active{display:block}
+    .suggestions ul{list-style:none; margin:0; padding:6px}
+    .suggestions li{padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text)}
+    .suggestions li:hover{background:#ffffff10}
+
+    footer{flex-wrap:wrap; gap:10px; color:var(--muted); border-top:1px solid #ffffff10}
+    footer .left, footer .right{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+    footer a{color:var(--muted); text-decoration:none}
+    footer a:hover{color:var(--link)}
+
+    @media (max-width:520px){
+      .logo{font-size:64px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="left">
+      <a href="#">About</a>
+      <a href="#">Auirah Apps</a>
+      <a href="#">Privacy</a>
+    </nav>
+    <div class="apps">
+      <span class="chip" id="greetChip">Hello</span>
+      <label title="Toggle light/dark mode">
+        <input id="themeToggle" class="toggle" type="checkbox" />
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="logo" aria-label="Auirah">
+        <span class="a1">A</span><span class="u">u</span><span class="i">i</span><span class="r">r</span><span class="a2">a</span><span class="h">h</span>
+      </div>
+      <div class="greeting" id="greeting">Good day, friend ✨</div>
+
+      <!-- Search -->
+      <form class="search" id="searchForm" role="search" aria-label="Auirah Search" autocomplete="off">
+        <button class="icon-btn" type="button" title="Apps" aria-label="Apps" onclick="openApps()" style="font-size:18px">☰</button>
+        <input id="q" name="q" type="search" placeholder="Search the web or ‘/’ to focus…" aria-label="Search" />
+        <button id="micBtn" class="icon-btn" type="button" title="Voice search" aria-label="Voice search">🎤</button>
+        <button class="icon-btn" type="submit" title="Search" aria-label="Search">🔍</button>
+      </form>
+      <div id="suggestions" class="suggestions" aria-live="polite"></div>
+
+      <div class="btns">
+        <button class="btn" id="searchBtn">Auirah Search</button>
+        <button class="btn" id="luckyBtn">I'm Feeling Inspired</button>
+      </div>
+
+      <!-- Quick links tailored for "Auirah" life -->
+      <div class="quick-apps" aria-label="Quick apps">
+        <a href="#" onclick="openTool('tasks')">Tasks</a>
+        <a href="#" onclick="openTool('notes')">Notes</a>
+        <a href="#" onclick="openTool('music')">Music</a>
+        <a href="#" onclick="openTool('photos')">Photos</a>
+        <a href="#" onclick="openTool('learn')">Learn</a>
+        <a href="#" onclick="openTool('maps')">Maps</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="left">
+      <span>United States</span>
+      <a href="#">Advertising</a>
+      <a href="#">Business</a>
+      <a href="#">How Search works</a>
+    </div>
+    <div class="right">
+      <a href="#" onclick="changeLanguage('en')">English</a>
+      <a href="#" onclick="changeLanguage('es')">Español</a>
+      <a href="#" onclick="changeLanguage('vi')">Tiếng Việt</a>
+      <a href="#" onclick="changeLanguage('fr')">Français</a>
+      <a href="#">Settings</a>
+    </div>
+  </footer>
+
+  <script>
+    // --- Theme (persist) ---
+    const themeToggle = document.getElementById('themeToggle');
+    const userPref = localStorage.getItem('auirah_theme');
+    if(userPref){
+      document.documentElement.setAttribute('data-theme', userPref);
+      themeToggle.checked = userPref === 'light';
+    } else {
+      // default dark
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    themeToggle.addEventListener('change', () => {
+      const theme = themeToggle.checked ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('auirah_theme', theme);
+    });
+
+    // --- Greeting + chip ---
+    function setGreeting(){
+      const h = new Date().getHours();
+      const ranges = [
+        {test: h<5, text:'Up late, Auirah?'},
+        {test: h>=5 && h<12, text:'Good morning, Auirah ✨'},
+        {test: h>=12 && h<17, text:'Good afternoon, Auirah ☀️'},
+        {test: h>=17 && h<22, text:'Good evening, Auirah 🌙'},
+        {test: h>=22, text:'Night mode, engage ✨'}
+      ];
+      const found = ranges.find(r=>r.test) || {text:'Hello, Auirah'};
+      document.getElementById('greeting').textContent = found.text;
+      document.getElementById('greetChip').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+    setGreeting();
+    setInterval(setGreeting, 60_000);
+
+    // --- Search behavior (submit to Google in a new tab for now) ---
+    const form = document.getElementById('searchForm');
+    const input = document.getElementById('q');
+    const suggestionsBox = document.getElementById('suggestions');
+    const searchBtn = document.getElementById('searchBtn');
+    const luckyBtn = document.getElementById('luckyBtn');
+
+    function performSearch(q){
+      if(!q) return;
+      const url = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+      window.open(url, '_blank', 'noopener');
+    }
+    form.addEventListener('submit', e => { e.preventDefault(); performSearch(input.value.trim()); });
+    searchBtn.addEventListener('click', () => performSearch(input.value.trim()));
+
+    // I'm Feeling Inspired -> random wholesome/creative prompts
+    const inspired = [
+      'best beginner ios projects to build',
+      'daily drawing prompts for creativity',
+      'how to learn vietnamese southern dialect',
+      'minimal home office inspiration',
+      'motorcycle cafe racer build guide',
+      'coding music lofi mix',
+      'photography golden hour tips',
+      'react accessibility checklist',
+      'javascript performance best practices',
+      'healthy jamaican recipes quick'
+    ];
+    luckyBtn.addEventListener('click', ()=>{
+      const pick = inspired[Math.floor(Math.random()*inspired.length)];
+      performSearch(pick);
+    });
+
+    // --- Suggestions (client-side demo) ---
+    const localHints = [
+      'Auirah tasks', 'Auirah notes', 'learn swiftui', 'three.js space shooter', 'how to set up mysql on mac', 'best figma color palettes', 'square api payments', 'binance api docs', 'firebase firestore rules', 'laravel hostinger deploy'
+    ];
+    function renderSuggestions(list){
+      if(!list.length){ suggestionsBox.classList.remove('active'); suggestionsBox.innerHTML=''; return; }
+      const items = list.slice(0,6).map(x=>`<li data-q="${x.replace(/"/g,'&quot;')}">🔎 <span>${x}</span></li>`).join('');
+      suggestionsBox.innerHTML = `<ul>${items}</ul>`;
+      suggestionsBox.classList.add('active');
+      document.querySelectorAll('.suggestions li').forEach(li=>{
+        li.addEventListener('click', ()=>{ input.value = li.dataset.q; performSearch(li.dataset.q); });
+      });
+    }
+    input.addEventListener('input', ()=>{
+      const val = input.value.toLowerCase().trim();
+      if(!val){ renderSuggestions([]); return; }
+      const matches = localHints.filter(x=>x.toLowerCase().includes(val));
+      renderSuggestions(matches);
+    });
+    input.addEventListener('focus', ()=>{ if(input.value){ input.dispatchEvent(new Event('input')); } });
+    document.addEventListener('click', (e)=>{ if(!document.querySelector('.wrap').contains(e.target)) renderSuggestions([]); });
+
+    // Shortcut: focus search with '/'
+    document.addEventListener('keydown', (e)=>{ if(e.key === '/'){ e.preventDefault(); input.focus(); }});
+
+    // --- Voice search (Web Speech API) ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const micBtn = document.getElementById('micBtn');
+    if(!SpeechRecognition){ micBtn.title = 'Voice search not supported in this browser'; }
+    else {
+      const rec = new SpeechRecognition();
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      let active = false;
+      micBtn.addEventListener('click', ()=>{
+        if(active){ rec.stop(); return; }
+        rec.start(); active = true; micBtn.style.background = '#2ecc7040';
+      });
+      rec.addEventListener('result', (e)=>{
+        const t = e.results[0][0].transcript; input.value = t; performSearch(t);
+      });
+      rec.addEventListener('end', ()=>{ active=false; micBtn.style.background=''; });
+      rec.addEventListener('error', ()=>{ active=false; micBtn.style.background=''; });
+    }
+
+    // --- Quick apps (demo modals) ---
+    function toast(msg){
+      const el = document.createElement('div');
+      el.textContent = msg; el.style.position='fixed'; el.style.left='50%'; el.style.bottom='20px'; el.style.transform='translateX(-50%)'; el.style.background='var(--card)'; el.style.color='var(--text)'; el.style.padding='10px 14px'; el.style.border='1px solid #ffffff22'; el.style.borderRadius='8px'; el.style.zIndex='9999';
+      document.body.appendChild(el); setTimeout(()=>{ el.remove(); }, 2000);
+    }
+    window.openApps = function(){ toast('App launcher coming soon ✨'); };
+    window.openTool = function(tool){
+      const map = {
+        tasks: 'https://keep.google.com/',
+        notes: 'https://keep.google.com/',
+        music: 'https://music.youtube.com/',
+        photos: 'https://photos.google.com/',
+        learn: 'https://www.youtube.com/results?search_query=coding+tutorials',
+        maps: 'https://www.google.com/maps'
+      };
+      window.open(map[tool] || 'https://www.google.com', '_blank');
+    }
+
+    // --- Languages (mock) ---
+    function changeLanguage(code){
+      toast(`Language switched to: ${code}`);
+    }
+    window.changeLanguage = changeLanguage;
+  </script>
+</body>
+</html>
